@@ -1,20 +1,36 @@
 from __future__ import annotations
 
 from app.core.metrics import metrics
-from app.models.schemas import ExtractedElement, PerceivedPage, SanitizedContext, SanitizedElement, Sensitivity
+from app.models.schemas import PerceivedPage, SanitizedContext, SanitizedElement, Sensitivity
 from app.privacy.detector import classify_field, detect_hybrid
 from app.privacy.types import PUBLIC_FIELDS
 from app.privacy.vault import vault
 from app.security.injection import extract_untrusted_instructions, strip_injection_from_context
 
 
+class PrivacyGatewayError(RuntimeError):
+    """Raised when sanitization cannot be completed; callers must fail closed."""
+
+
 def build_sanitized_context(page: PerceivedPage, task: str, user_profile_tokens: dict[str, str]) -> SanitizedContext:
+    try:
+        return _build_sanitized_context(page, task, user_profile_tokens)
+    except PrivacyGatewayError:
+        raise
+    except Exception as exc:
+        raise PrivacyGatewayError("Privacy gateway failed; refusing to send unsanitized context") from exc
+
+
+def _build_sanitized_context(page: PerceivedPage, task: str, user_profile_tokens: dict[str, str]) -> SanitizedContext:
     elements: list[SanitizedElement] = []
     detected = 0
     tokenized = 0
     for el in page.elements:
-        findings = detect_hybrid(el.value, el.label or el.name or el.id, el.tag, el.type)
-        sensitivity = classify_field(el.label or el.name or el.id, el.type, el.value)
+        try:
+            findings = detect_hybrid(el.value, el.label or el.name or el.id, el.tag, el.type)
+            sensitivity = classify_field(el.label or el.name or el.id, el.type, el.value)
+        except Exception as exc:
+            raise PrivacyGatewayError("PII detection failed; refusing to send unsanitized context") from exc
         display_value = el.value
         token = None
         if findings:

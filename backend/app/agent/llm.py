@@ -28,11 +28,15 @@ class LocalPlanner(LLMClient):
         tokens = context.available_user_tokens
         task = context.task.lower()
 
-        if "attack" in context.url and ("external" in task or "private data" in task):
-            return StructuredAction(
-                action="finish",
-                reason="Webpage injection is untrusted; refusing to exfiltrate data.",
-            )
+        if context.webpage_text_untrusted or "attack" in context.url:
+            if any(
+                phrase in task
+                for phrase in ("external", "private data", "bank details", "ignore previous", "attacker")
+            ):
+                return StructuredAction(
+                    action="finish",
+                    reason="Webpage injection is untrusted; refusing to exfiltrate data.",
+                )
 
         for el in context.elements:
             if el.role in {"textbox", "input", "email", "tel"} or el.type in {"text", "email", "tel", "password"}:
@@ -160,8 +164,11 @@ class OpenAIPlanner(LLMClient):
         if response.status_code >= 400:
             raise LLMUnavailable("AI reasoning unavailable")
         content = response.json()["choices"][0]["message"]["content"]
-        data = json.loads(content)
-        return StructuredAction.model_validate(data)
+        try:
+            data = json.loads(content)
+            return StructuredAction.model_validate(data)
+        except (json.JSONDecodeError, ValidationError, KeyError, TypeError) as exc:
+            raise ValueError(f"Malformed model output: {exc}") from exc
 
 
 def get_planner() -> LLMClient:
@@ -177,7 +184,7 @@ def plan_action(context: SanitizedContext, extra: str = "") -> StructuredAction:
         action = planner.plan(context, extra)
     except LLMUnavailable:
         raise
-    except ValidationError as exc:
+    except (ValidationError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise ValueError(f"Malformed model output: {exc}") from exc
     metrics.add(sanitized_context_sent=1)
     if vault_has_raw_in_context(context):

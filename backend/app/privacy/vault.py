@@ -42,6 +42,12 @@ class TokenVault:
         with self._lock:
             return self._token_to_value.get(maybe_token, maybe_token)
 
+    def is_known_token(self, maybe_token: str) -> bool:
+        if not maybe_token:
+            return False
+        with self._lock:
+            return maybe_token in self._token_to_value
+
     def contains_token(self, text: str) -> bool:
         with self._lock:
             return any(token in text for token in self._token_to_value)

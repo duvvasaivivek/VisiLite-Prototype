@@ -4,7 +4,6 @@ import asyncio
 import uuid
 from typing import Optional
 
-from app.agent.deterministic import deterministic_action
 from app.agent.guard import action_guard
 from app.agent.llm import LLMUnavailable, plan_action
 from app.audit.log import audit
@@ -14,7 +13,7 @@ from app.core.metrics import metrics
 from app.models.schemas import StructuredAction, TaskStatus
 from app.perception.engine import perception_engine
 from app.privacy.profile import load_profile, tokenize_profile
-from app.privacy.sanitizer import build_sanitized_context
+from app.privacy.sanitizer import PrivacyGatewayError, build_sanitized_context
 from app.privacy.vault import vault
 from app.security.domains import assert_allowed
 
@@ -113,7 +112,13 @@ class TaskOrchestrator:
                 audit.emit("DOM_EXTRACTED", url=page.url, cached=page.from_cache)
                 if page.ocr_used:
                     audit.emit("OCR_TRIGGERED", reason=page.ocr_reason)
-                context = build_sanitized_context(page, status.instruction, profile_tokens)
+                try:
+                    context = build_sanitized_context(page, status.instruction, profile_tokens)
+                except PrivacyGatewayError as exc:
+                    status.status = "failed"
+                    status.message = f"Privacy gateway failed; stopping: {exc}"
+                    audit.emit("PRIVACY_GATEWAY_FAILED", error=str(exc))
+                    return
                 audit.emit("PII_DETECTED", count=metrics.snapshot()["pii_detected"])
                 audit.emit("VALUES_TOKENIZED", count=metrics.snapshot()["pii_tokenized"])
                 audit.emit("SANITIZED_CONTEXT_CREATED")
@@ -128,12 +133,9 @@ class TaskOrchestrator:
                     extra = f"Previous action {last_key} may have failed; replan, do not blindly repeat."
 
                 try:
-                    action = deterministic_action(context)
-                    if action is None:
-                        action = plan_action(context, extra)
-                        audit.emit("MODEL_CALLED")
-                    else:
-                        audit.emit("DETERMINISTIC_ACTION")
+                    action = plan_action(context, extra)
+                    provider = settings.llm_provider.lower()
+                    audit.emit("MODEL_CALLED" if provider != "local" else "DETERMINISTIC_ACTION")
                     audit.emit("ACTION_RECEIVED", action=action.action.value, element=action.element_id)
                 except LLMUnavailable:
                     status.status = "failed"

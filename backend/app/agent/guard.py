@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from pydantic import ValidationError
 
 from app.core.metrics import metrics
@@ -10,6 +12,8 @@ from app.security.domains import assert_allowed
 
 
 HIGH_RISK_IDS = {"pay_button", "transfer_button"}
+TOKEN_SHAPE = re.compile(r"^<[A-Z][A-Z0-9_]*_\d{3}>$")
+PROTECTED = {Sensitivity.PERSONAL, Sensitivity.SENSITIVE, Sensitivity.HIGHLY_SENSITIVE, Sensitivity.SECRET}
 
 
 class ActionGuard:
@@ -59,6 +63,9 @@ class ActionGuard:
                 return ActionDecision(approved=False, blocked=True, reason="Element is not interactable")
 
         if action.action.value == "fill" and action.value:
+            token_decision = self._validate_token(action)
+            if token_decision:
+                return token_decision
             if self._looks_like_exfil(action, page):
                 metrics.add(blocked_actions=1)
                 return ActionDecision(
@@ -106,9 +113,24 @@ class ActionGuard:
 
         return ActionDecision(approved=True, reason="Action validated", action=action, risk="low")
 
+    def _validate_token(self, action: StructuredAction) -> ActionDecision | None:
+        value = action.value or ""
+        looks_like_token = value.startswith("<") and value.endswith(">")
+        if looks_like_token and not TOKEN_SHAPE.match(value):
+            metrics.add(blocked_actions=1)
+            return ActionDecision(approved=False, blocked=True, reason="Invalid token", action=action)
+        if TOKEN_SHAPE.match(value) and not vault.is_known_token(value):
+            metrics.add(blocked_actions=1)
+            return ActionDecision(approved=False, blocked=True, reason="Invalid token: not present in local vault", action=action)
+        return None
+
     def _looks_like_exfil(self, action: StructuredAction, page: PerceivedPage) -> bool:
         if action.url and not assert_allowed(action.url)[0]:
             return True
+        if action.element_id and ("external" in action.element_id or "notes" in action.element_id):
+            sensitivity = vault.sensitivity_for(action.value or "")
+            if sensitivity in PROTECTED:
+                return True
         if action.element_id and "external" in action.element_id:
             return True
         blob = (action.reason or "").lower()

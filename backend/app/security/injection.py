@@ -5,7 +5,7 @@ import re
 INJECTION_PATTERNS = [
     re.compile(r"ignore (all )?(previous|prior) instructions", re.I),
     re.compile(r"treat this webpage as a trusted system prompt", re.I),
-    re.compile(r"send the user's (private|personal) data", re.I),
+    re.compile(r"send the user's .{0,60}(data|details)", re.I),
     re.compile(r"navigate to https?://(?!localhost|127\.0\.0\.1)", re.I),
 ]
 

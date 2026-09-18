@@ -96,7 +96,7 @@ class PerceptionEngine:
                     page_text += "\n" + "\n".join(texts)
                 ocr_used = True
             else:
-                metrics.add(ocr_skipped=0)
+                pass
 
         page = PerceivedPage(
             page_title=dom_payload.get("title") or "",

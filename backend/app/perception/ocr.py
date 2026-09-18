@@ -18,6 +18,12 @@ def reader_load_count() -> int:
     return _READER_LOAD_COUNT
 
 
+def reset_ocr_state() -> None:
+    global _OCR_CACHE
+    _OCR_CACHE = {}
+    OCR_EVENTS.clear()
+
+
 def get_reader():
     global _READER, _READER_LOAD_COUNT
     if not settings.enable_ocr:
