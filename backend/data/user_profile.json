@@ -1,0 +1,19 @@
+{
+  "Full Name": "John Doe",
+  "Email": "john@example.com",
+  "Phone": "9876543210",
+  "Address": "12 Demo Street, Hyderabad",
+  "Date of Birth": "1999-01-15",
+  "City": "Hyderabad",
+  "Passenger Name": "John Doe",
+  "Source": "Hyderabad",
+  "Destination": "Bengaluru",
+  "Travel Date": "2026-10-12",
+  "Account Number": "123456789012",
+  "Beneficiary": "Jane Demo",
+  "Amount": "500",
+  "Card Number": "4111111111111111",
+  "CVV": "123",
+  "Transaction Password": "demo-password",
+  "OTP": "654321"
+}

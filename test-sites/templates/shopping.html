@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shopping Checkout</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Checkout</h1>
+    <p>Product: Synthetic Demo Headphones</p>
+    <form id="shopping-form" action="/shopping/submit" method="post">
+      <label for="product_input">Product</label>
+      <input id="product_input" name="product" type="text" value="Synthetic Demo Headphones" />
+
+      <label for="ship_address_input">Shipping Address</label>
+      <input id="ship_address_input" name="address" type="text" />
+
+      <label for="ship_phone_input">Phone</label>
+      <input id="ship_phone_input" name="phone" type="tel" />
+
+      <label for="card_input">Card Number (synthetic)</label>
+      <input id="card_input" name="card" type="text" autocomplete="off" />
+
+      <label for="cvv_input">CVV</label>
+      <input id="cvv_input" name="cvv" type="password" />
+
+      <button id="pay_button" type="submit">Submit Payment</button>
+    </form>
+  </main>
+</body>
+</html>

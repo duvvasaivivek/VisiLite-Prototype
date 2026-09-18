@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Travel Booking</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Travel Search</h1>
+    <form id="travel-form" action="/travel/submit" method="post">
+      <label for="source_input">Source</label>
+      <input id="source_input" name="source" type="text" />
+
+      <label for="destination_input">Destination</label>
+      <input id="destination_input" name="destination" type="text" />
+
+      <label for="travel_date_input">Travel Date</label>
+      <input id="travel_date_input" name="date" type="text" placeholder="YYYY-MM-DD" />
+
+      <label for="passenger_input">Passenger Name</label>
+      <input id="passenger_input" name="passenger" type="text" />
+
+      <button id="search_travel" type="submit">Search Flights</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Banking Transfer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Synthetic Bank Transfer</h1>
+    <p>All values on this page are synthetic demo data.</p>
+    <form id="banking-form" action="/banking/submit" method="post">
+      <label for="account_input">Account Number</label>
+      <input id="account_input" name="account" type="text" />
+
+      <label for="beneficiary_input">Beneficiary</label>
+      <input id="beneficiary_input" name="beneficiary" type="text" />
+
+      <label for="amount_input">Amount</label>
+      <input id="amount_input" name="amount" type="text" />
+
+      <label for="password_input">Transaction Password</label>
+      <input id="password_input" name="password" type="password" />
+
+      <label for="otp_input">OTP</label>
+      <input id="otp_input" name="otp" type="text" />
+
+      <button id="transfer_button" type="submit">Send Transfer</button>
+    </form>
+  </main>
+</body>
+</html>

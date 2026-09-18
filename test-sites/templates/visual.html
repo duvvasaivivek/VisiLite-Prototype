@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Visual Only</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Visual-only coupon</h1>
+    <p>The coupon code is drawn on a canvas and is not present as DOM text.</p>
+    <canvas id="coupon_canvas" width="640" height="140"></canvas>
+    <label for="coupon_input">Coupon code</label>
+    <input id="coupon_input" name="coupon" type="text" />
+    <button id="apply_coupon" type="button">Apply Coupon</button>
+    <p id="coupon_status"></p>
+  </main>
+  <script>
+    const canvas = document.getElementById("coupon_canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#10233d";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#7ee0c8";
+    ctx.font = "36px Segoe UI";
+    ctx.fillText("COUPON VLITE-42", 80, 85);
+    document.getElementById("apply_coupon").addEventListener("click", () => {
+      const value = document.getElementById("coupon_input").value;
+      document.getElementById("coupon_status").textContent =
+        value === "VLITE-42" ? "Coupon applied" : "Unknown coupon";
+    });
+  </script>
+</body>
+</html>

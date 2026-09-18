@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registration</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Account Registration</h1>
+    <form id="registration-form" action="/registration/submit" method="post">
+      <label for="name_input">Full Name</label>
+      <input id="name_input" name="name" type="text" role="textbox" required />
+
+      <label for="email_input">Email</label>
+      <input id="email_input" name="email" type="email" role="textbox" required />
+
+      <label for="phone_input">Phone</label>
+      <input id="phone_input" name="phone" type="tel" role="textbox" required />
+
+      <label for="address_input">Address</label>
+      <input id="address_input" name="address" type="text" role="textbox" required />
+
+      <label for="dob_input">Date of Birth</label>
+      <input id="dob_input" name="dob" type="text" role="textbox" placeholder="YYYY-MM-DD" required />
+
+      <label for="city_input">City</label>
+      <input id="city_input" name="city" type="text" role="textbox" required />
+
+      <button id="submit_registration" type="submit">Submit Registration</button>
+    </form>
+  </main>
+</body>
+</html>

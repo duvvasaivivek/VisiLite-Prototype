@@ -1,0 +1,42 @@
+:root {
+  --bg: #0b1220;
+  --card: #132033;
+  --text: #e8eef8;
+  --accent: #7ee0c8;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+.card {
+  max-width: 640px;
+  margin: 48px auto;
+  background: var(--card);
+  padding: 28px;
+  border-radius: 16px;
+}
+label { display: block; margin-top: 12px; }
+input, button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #31445f;
+}
+button {
+  margin-top: 18px;
+  background: var(--accent);
+  color: #062017;
+  font-weight: 700;
+  cursor: pointer;
+}
+a { color: var(--accent); }
+#malicious_instruction {
+  background: #3a1d1d;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
