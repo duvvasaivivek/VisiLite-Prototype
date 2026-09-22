@@ -118,7 +118,11 @@ class LocalPlanner(LLMClient):
         return None
 
 
-class OpenAIPlanner(LLMClient):
+class GeminiPlanner(LLMClient):
+    """Calls the Google Gemini REST API with sanitized context only."""
+
+    GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
     def plan(self, context: SanitizedContext, extra: str = "") -> StructuredAction:
         if not settings.llm_api_key:
             raise LLMUnavailable("AI reasoning unavailable")
@@ -127,54 +131,61 @@ class OpenAIPlanner(LLMClient):
         except Exception as exc:
             raise LLMUnavailable("AI reasoning unavailable") from exc
 
+        user_content = json.dumps(
+            {
+                "task": context.task,
+                "sanitized_page": context.model_dump(),
+                "extra": extra,
+                "schema": {
+                    "action": "navigate|click|fill|select|scroll|wait|extract|finish",
+                    "element_id": "string",
+                    "value": "token or public value",
+                    "url": "optional",
+                    "reason": "string",
+                },
+            }
+        )
+
         payload = {
-            "model": settings.llm_model,
-            "temperature": 0,
-            "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": SYSTEM_POLICY},
+            "contents": [
                 {
                     "role": "user",
-                    "content": json.dumps(
-                        {
-                            "task": context.task,
-                            "sanitized_page": context.model_dump(),
-                            "extra": extra,
-                            "schema": {
-                                "action": "navigate|click|fill|select|scroll|wait|extract|finish",
-                                "element_id": "string",
-                                "value": "token or public value",
-                                "url": "optional",
-                                "reason": "string",
-                            },
-                        }
-                    ),
-                },
+                    "parts": [{"text": f"{SYSTEM_POLICY}\n\n{user_content}"}],
+                }
             ],
+            "generationConfig": {
+                "temperature": 0,
+                "responseMimeType": "application/json",
+            },
         }
-        headers = {"Authorization": f"Bearer {settings.llm_api_key}"}
+
+        url = self.GEMINI_API_URL.format(model=settings.llm_model)
         with timed() as t:
             response = httpx.post(
-                "https://api.openai.com/v1/chat/completions",
+                url,
                 json=payload,
-                headers=headers,
-                timeout=40,
+                params={"key": settings.llm_api_key},
+                headers={"Content-Type": "application/json"},
+                timeout=60,
             )
         metrics.add(llm_calls=1, llm_latency_ms_total=t.ms)
         if response.status_code >= 400:
             raise LLMUnavailable("AI reasoning unavailable")
-        content = response.json()["choices"][0]["message"]["content"]
         try:
+            resp_json = response.json()
+            content = resp_json["candidates"][0]["content"]["parts"][0]["text"]
             data = json.loads(content)
             return StructuredAction.model_validate(data)
-        except (json.JSONDecodeError, ValidationError, KeyError, TypeError) as exc:
+        except (json.JSONDecodeError, ValidationError, KeyError, TypeError, IndexError) as exc:
             raise ValueError(f"Malformed model output: {exc}") from exc
 
 
 def get_planner() -> LLMClient:
     provider = settings.llm_provider.lower()
-    if provider == "openai":
-        return OpenAIPlanner()
+    if provider == "gemini":
+        if settings.llm_api_key:
+            return GeminiPlanner()
+        return LocalPlanner()
     return LocalPlanner()
 
 

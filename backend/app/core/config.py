@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    llm_provider: str = "local"
-    llm_model: str = "gpt-4o-mini"
+    llm_provider: str = "gemini"
+    llm_model: str = "gemini-2.0-flash"
     llm_api_key: str = ""
 
     max_agent_steps: int = 30

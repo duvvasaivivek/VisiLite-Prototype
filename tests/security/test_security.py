@@ -126,8 +126,8 @@ def test_action_guard_rejection_missing_element():
 
 def test_llm_unavailable_without_api_key(monkeypatch):
     from app.core.config import settings
+    from app.agent.llm import GeminiPlanner
 
-    monkeypatch.setattr(settings, "llm_provider", "openai")
     monkeypatch.setattr(settings, "llm_api_key", "")
     ctx = SanitizedContext(
         page_title="Registration",
@@ -136,7 +136,7 @@ def test_llm_unavailable_without_api_key(monkeypatch):
         elements=[],
     )
     with pytest.raises(LLMUnavailable):
-        plan_action(ctx)
+        GeminiPlanner().plan(ctx)
 
 
 def test_privacy_gateway_failure_fail_closed(monkeypatch):
@@ -151,3 +151,52 @@ def test_privacy_gateway_failure_fail_closed(monkeypatch):
     )
     with pytest.raises(PrivacyGatewayError):
         build_sanitized_context(page, "register", {})
+
+
+def test_vault_mapping_never_leaks_in_context():
+    vault.reset()
+    token = vault.tokenize("secret_password", "PASSWORD", Sensitivity.SECRET)
+    page = PerceivedPage(
+        page_title="Login",
+        url="http://localhost:3000/login",
+        elements=[ExtractedElement(id="pwd", role="textbox", label="Password", type="password")]
+    )
+    ctx = build_sanitized_context(page, "login", {"Password": token})
+    blob = ctx.model_dump_json()
+    assert token in blob
+    assert "secret_password" not in blob
+    assert vault.has_raw_secret_in(blob) is False
+
+
+def test_hidden_element_click_blocked():
+    page = PerceivedPage(
+        page_title="Test", url="http://localhost:3000/test",
+        elements=[ExtractedElement(id="hidden_btn", role="button", visible=False, enabled=True)]
+    )
+    decision = ActionGuard().validate({"action": "click", "element_id": "hidden_btn", "reason": "click"}, page, page.url)
+    assert decision.blocked
+    assert "visible" in decision.reason.lower()
+
+
+def test_disabled_element_interaction_blocked():
+    page = PerceivedPage(
+        page_title="Test", url="http://localhost:3000/test",
+        elements=[ExtractedElement(id="disabled_btn", role="button", visible=True, enabled=False)]
+    )
+    decision = ActionGuard().validate({"action": "click", "element_id": "disabled_btn", "reason": "click"}, page, page.url)
+    assert decision.blocked
+    assert "interactable" in decision.reason.lower()
+
+
+def test_data_classification_levels():
+    assert Sensitivity.PUBLIC.value == "PUBLIC"
+    assert Sensitivity.PERSONAL.value == "PERSONAL"
+    assert Sensitivity.SENSITIVE.value == "SENSITIVE"
+    assert Sensitivity.HIGHLY_SENSITIVE.value == "HIGHLY_SENSITIVE"
+    assert Sensitivity.SECRET.value == "SECRET"
+
+
+def test_navigate_javascript_blocked():
+    decision = ActionGuard().validate({"action": "navigate", "url": "javascript:alert(1)", "reason": "xss"}, PerceivedPage(page_title="x", url="http://localhost:3000/", elements=[]), "http://localhost:3000/")
+    assert decision.blocked
+    assert "protocol" in decision.reason.lower() or "blocked" in decision.reason.lower()
