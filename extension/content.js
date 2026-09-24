@@ -23,7 +23,9 @@ function extractDOM() {
             tag: node.tagName.toLowerCase(),
             type: node.type || null,
             role: node.getAttribute('role') || null,
-            text: (node.innerText || node.value || node.placeholder || '').trim().substring(0, 100),
+            text: (node.innerText || '').trim().substring(0, 100),
+            value: (node.value || '').trim().substring(0, 100),
+            placeholder: (node.placeholder || '').trim().substring(0, 100),
             boundingBox: {
                 x: rect.x,
                 y: rect.y,

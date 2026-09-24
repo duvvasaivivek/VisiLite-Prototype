@@ -42,19 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error("No active tab found.");
             }
             
-            log('Injecting content script...', 'system');
+            log('Starting agent...', 'system');
             
-            // Ensure content script is injected (it usually is by manifest, but we can send message)
-            const response = await chrome.tabs.sendMessage(tab.id, { 
-                action: "START_AGENT", 
-                task: task 
+            // Tell background script to start the agent so it can track navigation
+            chrome.runtime.sendMessage({ 
+                action: "START_AGENT_FROM_POPUP", 
+                task: task,
+                tabId: tab.id
             });
-
-            if (response && response.status === 'started') {
-                log('Agent is analyzing the page.', 'info');
-            } else {
-                throw new Error("Content script did not respond correctly.");
-            }
 
         } catch (error) {
             log(`Error: ${error.message}`, 'error');

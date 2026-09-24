@@ -12,6 +12,8 @@ class ExtensionElement(BaseModel):
     type: Optional[str] = None
     role: Optional[str] = None
     text: str = ""
+    value: str = ""
+    placeholder: str = ""
 
 class ExtensionContext(BaseModel):
     url: str
@@ -21,6 +23,7 @@ class ExtensionContext(BaseModel):
 class ExtensionPlanRequest(BaseModel):
     task: str
     context: ExtensionContext
+    history: list[str] = []
 
 @router.get("/health")
 async def health():
@@ -33,11 +36,11 @@ async def extension_plan(req: ExtensionPlanRequest):
         elements.append(SanitizedElement(
             id=el.id,
             role=el.role or "",
-            label="",
+            label=el.placeholder or el.text,
             type=el.type or "",
             tag=el.tag,
             text=el.text,
-            value="",
+            value=el.value,
             sensitivity=Sensitivity.PUBLIC
         ))
     
@@ -49,7 +52,8 @@ async def extension_plan(req: ExtensionPlanRequest):
         available_user_tokens={}
     )
     
+    history_str = "Previous actions taken in this task loop: " + ", ".join(req.history) if req.history else ""
     try:
-        return plan_action(sanitized_ctx)
+        return plan_action(sanitized_ctx, extra=history_str)
     except LLMUnavailable:
         raise HTTPException(503, "AI reasoning unavailable")

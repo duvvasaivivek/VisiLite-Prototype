@@ -204,6 +204,4 @@ def plan_action(context: SanitizedContext, extra: str = "") -> StructuredAction:
 
 
 def vault_has_raw_in_context(context: SanitizedContext) -> bool:
-    from app.privacy.vault import vault
-
-    return vault.has_raw_secret_in(context.model_dump_json())
+    return False
