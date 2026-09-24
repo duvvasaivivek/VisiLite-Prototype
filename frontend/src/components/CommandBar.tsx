@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Globe } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { api, TaskStatus } from '../api';
 
 interface CommandBarProps {
@@ -9,7 +9,7 @@ interface CommandBarProps {
 
 export function CommandBar({ onTaskStarted, disabled }: CommandBarProps) {
   const [instruction, setInstruction] = useState('');
-  const [startUrl, setStartUrl] = useState('');
+
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,8 +19,7 @@ export function CommandBar({ onTaskStarted, disabled }: CommandBarProps) {
     setLoading(true);
     try {
       const task = await api.createTask({
-        instruction,
-        start_url: startUrl || undefined
+        instruction
       });
       setInstruction('');
       onTaskStarted(task);
@@ -36,20 +35,7 @@ export function CommandBar({ onTaskStarted, disabled }: CommandBarProps) {
     <div className="card" style={{ marginBottom: '2rem' }}>
       <h2 className="card-title">Command VisiLite</h2>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div className="input-group">
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Globe className="feed-icon" size={18} style={{ position: 'absolute', left: '1rem', top: '0.85rem' }} />
-            <input
-              type="text"
-              className="input"
-              style={{ paddingLeft: '2.5rem' }}
-              placeholder="Start URL (optional)"
-              value={startUrl}
-              onChange={(e) => setStartUrl(e.target.value)}
-              disabled={disabled || loading}
-            />
-          </div>
-        </div>
+
         <div className="input-group">
           <input
             type="text"
