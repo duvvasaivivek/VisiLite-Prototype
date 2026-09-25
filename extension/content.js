@@ -1,5 +1,22 @@
 // Extract basic DOM elements that the agent can interact with
 function extractDOM() {
+    // 1. Run the Privacy Scanner FIRST
+    const sensitiveElements = window.PrivacyScanner ? window.PrivacyScanner.scanPage() : [];
+    if (window.PrivacyScanner) {
+        window.PrivacyScanner.drawVisualOverlays(sensitiveElements);
+    }
+    
+    // Create a fast lookup Set for DOM heuristic elements
+    const sensitiveNodes = new Set(sensitiveElements.filter(e => e.type === 'DOM_HEURISTIC').map(e => e.node));
+
+    if (sensitiveElements.length > 0) {
+        let hiddenDetails = sensitiveElements.map(e => {
+            if (e.type === 'REGEX_MATCH') return `"${e.originalText}"`;
+            return `<${e.node.tagName.toLowerCase()} type="${e.node.type || ''}">`;
+        }).join(', ');
+        chrome.runtime.sendMessage({ type: 'LOG', text: `Privacy Shield: Redacted ${sensitiveElements.length} items (${hiddenDetails})`, level: 'success' });
+    }
+
     const elements = [];
     
     // We only care about interactive elements or text content
@@ -18,14 +35,29 @@ function extractDOM() {
             return;
         }
 
+        // Apply Redaction!
+        let isSensitive = sensitiveNodes.has(node);
+        let rawText = (node.innerText || '').trim().substring(0, 100);
+        let rawValue = (node.value || '').trim().substring(0, 100);
+        let rawPlaceholder = (node.placeholder || '').trim().substring(0, 100);
+
+        if (isSensitive) {
+            rawValue = "[REDACTED_SENSITIVE_INPUT]";
+        } else if (window.PrivacyScanner) {
+            // Scrub free-text
+            rawText = window.PrivacyScanner.scanNodeText(rawText);
+            rawValue = window.PrivacyScanner.scanNodeText(rawValue);
+            rawPlaceholder = window.PrivacyScanner.scanNodeText(rawPlaceholder);
+        }
+
         elements.push({
             id: elId,
             tag: node.tagName.toLowerCase(),
             type: node.type || null,
             role: node.getAttribute('role') || null,
-            text: (node.innerText || '').trim().substring(0, 100),
-            value: (node.value || '').trim().substring(0, 100),
-            placeholder: (node.placeholder || '').trim().substring(0, 100),
+            text: rawText,
+            value: rawValue,
+            placeholder: rawPlaceholder,
             boundingBox: {
                 x: rect.x,
                 y: rect.y,

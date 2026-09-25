@@ -41,7 +41,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })
         .then(data => {
             chrome.runtime.sendMessage({ type: 'LOG', text: 'Received action plan from AI.', level: 'success' });
-            actionHistory.push(data.action);
+            actionHistory.push(`${data.action} on ${data.element_id}`);
             
             if (sender.tab && sender.tab.id) {
                 chrome.tabs.sendMessage(sender.tab.id, {

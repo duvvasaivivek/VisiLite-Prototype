@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisiLite Privacy Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Privacy Shield Test</h1>
+    <p>Run the VisiLite Agent on this page to test the client-side redaction.</p>
+
+    <div class="card">
+        <h2>Your Profile</h2>
+        <!-- The Regex scanner should catch these -->
+        <p>Email Address: <span>hackathon@example.com</span></p>
+        <p>Phone Number: <span>(555) 123-4567</span></p>
+        <p>SSN: <span>123-45-6789</span></p>
+    </div>
+
+    <div class="card">
+        <h2>Update Details</h2>
+        <!-- The DOM heuristic scanner should catch these -->
+        <div class="form-group">
+            <label>Credit Card Number (autocomplete)</label>
+            <input type="text" autocomplete="cc-number" value="4111222233334444">
+        </div>
+        <div class="form-group">
+            <label>New Password (type="password")</label>
+            <input type="password" value="supersecret123">
+        </div>
+        <button id="save-btn">Save Changes</button>
+    </div>
+</body>
+</html>
