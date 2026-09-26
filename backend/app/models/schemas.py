@@ -24,6 +24,8 @@ class AgentActionType(str, Enum):
     wait = "wait"
     extract = "extract"
     finish = "finish"
+    fail = "fail"
+    enter = "enter"
 
 
 class ExtractedElement(BaseModel):

@@ -137,7 +137,7 @@ class GeminiPlanner(LLMClient):
                 "sanitized_page": context.model_dump(),
                 "extra": extra,
                 "schema": {
-                    "action": "navigate|click|fill|select|scroll|wait|extract|finish",
+                    "action": "navigate|click|fill|select|scroll|wait|extract|finish|fail|enter",
                     "element_id": "string",
                     "value": "token or public value",
                     "url": "optional",
