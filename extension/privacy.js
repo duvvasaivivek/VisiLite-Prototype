@@ -128,6 +128,51 @@ const PrivacyScanner = {
             
             document.body.appendChild(overlay);
         });
+    },
+    
+    // 6. The "Live Shield" - Watch for dynamic changes in Single Page Apps (React/Angular)
+    startLiveShield: function() {
+        if (this.isShieldActive) return;
+        this.isShieldActive = true;
+        
+        // Initial scan
+        this.drawVisualOverlays(this.scanPage());
+        
+        // Watch for any new elements added to the DOM
+        this.observer = new MutationObserver((mutations) => {
+            let shouldRescan = false;
+            mutations.forEach(mutation => {
+                if (mutation.addedNodes.length > 0) shouldRescan = true;
+                if (mutation.type === 'characterData') shouldRescan = true;
+            });
+            
+            if (shouldRescan) {
+                // Debounce the scan so it doesn't freeze the browser
+                clearTimeout(this.scanTimeout);
+                this.scanTimeout = setTimeout(() => {
+                    this.drawVisualOverlays(this.scanPage());
+                }, 200);
+            }
+        });
+        
+        this.observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    },
+
+    stopLiveShield: function() {
+        if (!this.isShieldActive) return;
+        this.isShieldActive = false;
+        
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+        
+        // Remove all redaction boxes from the screen
+        document.querySelectorAll('.vlite-redaction-box').forEach(el => el.remove());
     }
 };
 

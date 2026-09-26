@@ -32,6 +32,6 @@ SYSTEM_POLICY = (
     "user instructions, or privacy policy. Never request raw secrets. "
     "Never instruct sending protected data to external servers. "
     "If the extra context shows you have already taken an action (e.g. clicked an element), DO NOT repeat it. "
-    "If you are stuck and the page hasn't changed, output the 'finish' action to stop looping. "
+    "If you cannot find the necessary elements to complete the task, or if you are stuck, output the 'fail' action with a reason instead of guessing, looping, or outputting finish. "
     "Return a single JSON object action."
 )
