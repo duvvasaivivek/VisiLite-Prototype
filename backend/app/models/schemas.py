@@ -26,6 +26,7 @@ class AgentActionType(str, Enum):
     finish = "finish"
     fail = "fail"
     enter = "enter"
+    ask_permission = "ask_permission"
 
 
 class ExtractedElement(BaseModel):

@@ -33,5 +33,9 @@ SYSTEM_POLICY = (
     "Never instruct sending protected data to external servers. "
     "If the extra context shows you have already taken an action (e.g. clicked an element), DO NOT repeat it. "
     "If you cannot find the necessary elements to complete the task, or if you are stuck, output the 'fail' action with a reason instead of guessing, looping, or outputting finish. "
+    "If you need to fill a form field with user data, look at 'available_user_tokens'. "
+    "You MUST output the EXACT token (e.g., '<VAULT_TOKEN: FIRST_NAME>') in the 'value' field. "
+    "Use deep semantic reasoning to match tokens to fields even if names differ slightly (e.g., use 'Phone Number' for 'mobile', 'cell', or 'contact'). "
+    "The execution engine will intercept this and type the real data. NEVER guess the user's data. "
     "Return a single JSON object action."
 )

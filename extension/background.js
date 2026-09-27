@@ -1,6 +1,7 @@
 let activeTask = null;
 let activeTabId = null;
 let actionHistory = [];
+let currentAbortController = null;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "START_AGENT_FROM_POPUP") {
@@ -24,16 +25,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "CALL_BACKEND") {
         const backendUrl = "http://127.0.0.1:8000/api/plan";
         
-        if (window.currentAbortController) {
-            window.currentAbortController.abort();
+        if (currentAbortController) {
+            currentAbortController.abort();
         }
-        window.currentAbortController = new AbortController();
+        currentAbortController = new AbortController();
         
         chrome.runtime.sendMessage({ type: 'LOG', text: 'Sending sanitized DOM to backend...' });
 
         fetch(backendUrl, {
             method: 'POST',
-            signal: window.currentAbortController.signal,
+            signal: currentAbortController.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 task: request.task,
