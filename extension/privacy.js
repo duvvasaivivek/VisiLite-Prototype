@@ -1,52 +1,38 @@
-// VisiLite Privacy Scanner v2.0
-// High-recall, high-precision PII detection engine with pixel-perfect redaction
-// Covers: Global + Indian-specific PII patterns with Luhn validation
+// VisiLite Privacy Scanner v2.1
+// Context-Aware PII Engine: Separates candidate generation from classification
+// Resolves false positives using surrounding DOM and text semantics
 
 const PrivacyScanner = {
-    // 1. Comprehensive Regex Patterns (Ordered by specificity to prevent overlaps)
+    // 1. Strict Patterns (Unambiguous, requires no context)
     PATTERNS: [
-        // --- HIGH SENSITIVITY: Financial ---
-        { name: 'CREDIT_CARD', label: '[CARD]',
-          regex: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/g },
-        { name: 'SSN', label: '[SSN]',
-          regex: /\b\d{3}-\d{2}-\d{4}\b/g },
-        { name: 'AADHAAR', label: '[AADHAAR]',
-          regex: /\b[2-9]\d{3}[\s-]?\d{4}[\s-]?\d{4}\b/g },
-        { name: 'PAN_CARD', label: '[PAN]',
-          regex: /\b[A-Z]{3}[PCHABGJLFT][A-Z]\d{4}[A-Z]\b/g },
-        { name: 'IFSC', label: '[IFSC]',
-          regex: /\b[A-Z]{4}0[A-Z0-9]{6}\b/g },
-        { name: 'BANK_ACCOUNT', label: '[ACCOUNT]',
-          regex: /\b\d{9,18}\b/g },
-        { name: 'CRYPTO_WALLET', label: '[WALLET]',
-          regex: /\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b|\b0x[a-fA-F0-9]{40}\b/g },
-
-        // --- HIGH SENSITIVITY: Identity ---
-        { name: 'PASSPORT_IN', label: '[PASSPORT]',
-          regex: /\b[A-Z][1-9]\d{6}[1-9]\b/g },
-        { name: 'VOTER_ID', label: '[VOTER_ID]',
-          regex: /\b[A-Z]{3}\d{7}\b/g },
-        { name: 'DL_IN', label: '[DL]',
-          regex: /\b[A-Z]{2}\d{2}\s?\d{4}\s?\d{7}\b/g },
-
-        // --- MEDIUM SENSITIVITY: Contact ---
-        { name: 'EMAIL', label: '[EMAIL]',
-          regex: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g },
-        { name: 'UPI_ID', label: '[UPI]',
-          regex: /\b[a-zA-Z0-9.\-_]{3,}@(?:okicici|oksbi|okhdfcbank|okaxis|okboi|ybl|upi|paytm|gpay|ibl|axl|sbi|icici|hdfc|apl|allbank|axisbank)\b/g },
-        { name: 'PHONE_IN', label: '[PHONE]',
-          regex: /\b(?:\+?91[\-\s]?)?[6-9]\d{9}\b/g },
-        { name: 'PHONE_US', label: '[PHONE]',
-          regex: /\b(?:\+?1[-. ]?)?\(?[0-9]{3}\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4}\b/g },
-
-        // --- LOW SENSITIVITY: Technical ---
-        { name: 'IP_ADDRESS', label: '[IP]',
-          regex: /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g },
-        { name: 'DOB', label: '[DOB]',
-          regex: /\b(?:0[1-9]|[12]\d|3[01])[\/\-](?:0[1-9]|1[0-2])[\/\-](?:19|20)\d{2}\b/g },
+        { name: 'CREDIT_CARD', label: '[CARD]', regex: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/g },
+        { name: 'SSN', label: '[SSN]', regex: /\b\d{3}-\d{2}-\d{4}\b/g },
+        { name: 'AADHAAR', label: '[AADHAAR]', regex: /\b[2-9]\d{3}[\s-]?\d{4}[\s-]?\d{4}\b/g },
+        { name: 'PAN_CARD', label: '[PAN]', regex: /\b[A-Z]{3}[PCHABGJLFT][A-Z]\d{4}[A-Z]\b/g },
+        { name: 'IFSC', label: '[IFSC]', regex: /\b[A-Z]{4}0[A-Z0-9]{6}\b/g },
+        { name: 'CRYPTO_WALLET', label: '[WALLET]', regex: /\b(?:bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}\b|\b0x[a-fA-F0-9]{40}\b/g },
+        { name: 'PASSPORT_IN', label: '[PASSPORT]', regex: /\b[A-Z][1-9]\d{6}[1-9]\b/g },
+        { name: 'VOTER_ID', label: '[VOTER_ID]', regex: /\b[A-Z]{3}\d{7}\b/g },
+        { name: 'DL_IN', label: '[DL]', regex: /\b[A-Z]{2}\d{2}\s?\d{4}\s?\d{7}\b/g },
+        { name: 'EMAIL', label: '[EMAIL]', regex: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g },
+        { name: 'UPI_ID', label: '[UPI]', regex: /\b[a-zA-Z0-9.\-_]{3,}@(?:okicici|oksbi|okhdfcbank|okaxis|okboi|ybl|upi|paytm|gpay|ibl|axl|sbi|icici|hdfc|apl|allbank|axisbank)\b/g },
+        { name: 'IP_ADDRESS', label: '[IP]', regex: /\b(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g }
     ],
 
-    // 2. High-Confidence DOM Heuristics (input fields that are inherently sensitive)
+    // 2. Candidate Patterns (Ambiguous, requires text/DOM context resolution)
+    CANDIDATE_PATTERNS: [
+        { 
+            name: 'NUMBER_CANDIDATE', 
+            // Catches IN phones, US phones, and generic 9-18 digit IDs (Bank Accounts, Order IDs, Tracking IDs)
+            regex: /\b(?:\+?1[-. ]?)?\(?[0-9]{3}\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4}\b|\b(?:\+?91[\-\s]?)?[6-9]\d{9}\b|\b\d{9,18}\b/g 
+        },
+        { 
+            name: 'DATE_CANDIDATE', 
+            regex: /\b(?:0[1-9]|[12]\d|3[01])[\/\-](?:0[1-9]|1[0-2])[\/\-](?:19|20)\d{2}\b/g 
+        }
+    ],
+
+    // 3. High-Confidence DOM Heuristics (input fields that are inherently sensitive)
     SENSITIVE_SELECTORS: [
         'input[type="password"]',
         'input[autocomplete*="cc-"]',
@@ -66,18 +52,76 @@ const PrivacyScanner = {
         'input[autocomplete*="password"]'
     ].join(', '),
 
-    // Scan a single text string and replace all PII matches with redaction tokens
-    scanNodeText(text) {
+    // Context-Aware Resolver: Classifies a candidate based on preceding text or parent DOM attributes
+    resolveCandidate(matchString, candidateType, textBefore, nodeContext) {
+        const combinedContext = (textBefore + " " + nodeContext).toLowerCase();
+        
+        if (candidateType === 'NUMBER_CANDIDATE') {
+            // 1. Negative Context: Explicitly preserve safe identifiers
+            if (/(order|invoice|tracking|txn|transaction|id|no\.|number|ref|receipt|item|part|qty|quantity)\b/i.test(combinedContext)) {
+                return null; 
+            }
+            // 2. Positive Context: Phone Numbers
+            if (/(phone|mobile|tel|cell|call|contact|sms|whatsapp|ph)\b/i.test(combinedContext)) {
+                return { name: 'PHONE', label: '[PHONE]' };
+            }
+            // 3. Positive Context: Bank Accounts
+            if (/(account|acct|bank|routing|ifsc|deposit|transfer)\b/i.test(combinedContext)) {
+                return { name: 'BANK_ACCOUNT', label: '[ACCOUNT]' };
+            }
+            
+            // 4. Default Heuristics (If no clear context exists)
+            // US format fallback
+            if (/\(?[0-9]{3}\)?[-. ]?[0-9]{3}[-. ]?[0-9]{4}/.test(matchString) && /[-()]/.test(matchString)) {
+                return { name: 'PHONE', label: '[PHONE]' };
+            }
+            // IN format fallback (+91 prefix)
+            if (/\+?91/.test(matchString)) {
+                return { name: 'PHONE', label: '[PHONE]' };
+            }
+            
+            // If it is just a random 10-18 digit number with no context, preserve it (prevent false positives on IDs)
+            return null; 
+        }
+        
+        if (candidateType === 'DATE_CANDIDATE') {
+            if (/(dob|birth|born|age)\b/i.test(combinedContext)) {
+                return { name: 'DOB', label: '[DOB]' };
+            }
+            // Event date, invoice date, delivery date, etc -> Preserve
+            return null; 
+        }
+        
+        return null;
+    },
+
+    // Scan a single text string (used by backend grounder)
+    scanNodeText(text, contextStr = '') {
         if (!text || text.length < 3) return text;
         let sanitized = text;
+        
+        // 1. Strict Patterns
         for (const pattern of this.PATTERNS) {
             pattern.regex.lastIndex = 0;
             sanitized = sanitized.replace(pattern.regex, `[REDACTED_${pattern.name}]`);
         }
+        
+        // 2. Candidate Patterns (with context)
+        for (const candidate of this.CANDIDATE_PATTERNS) {
+            candidate.regex.lastIndex = 0;
+            sanitized = sanitized.replace(candidate.regex, (matchStr, offset, fullStr) => {
+                const textBefore = fullStr.substring(Math.max(0, offset - 40), offset);
+                const resolved = this.resolveCandidate(matchStr, candidate.name, textBefore, contextStr);
+                if (resolved) {
+                    return `[REDACTED_${resolved.name}]`;
+                }
+                return matchStr; // preserve
+            });
+        }
         return sanitized;
     },
 
-    // Full page scan: returns array of sensitive element descriptors
+    // Full page scan: returns array of sensitive element descriptors for live redaction
     scanPage() {
         const perfStart = performance.now();
         const sensitiveElements = [];
@@ -109,31 +153,52 @@ const PrivacyScanner = {
             const parentTag = parent.tagName;
             if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'NOSCRIPT') continue;
             
+            // Generate semantic context from the parent element to resolve candidates
+            const nodeContext = [parent.id, parent.name, parent.className, parent.getAttribute('aria-label')].filter(Boolean).join(' ');
+
+            // Sub-routine to push redaction rects
+            const addRedaction = (matchStr, matchIndex, label, name) => {
+                try {
+                    const range = document.createRange();
+                    range.setStart(textNode, matchIndex);
+                    range.setEnd(textNode, matchIndex + matchStr.length);
+                    const rect = range.getBoundingClientRect();
+                    
+                    if (rect.width > 0 && rect.height > 0) {
+                        sensitiveElements.push({
+                            node: parent,
+                            textNode: textNode,
+                            type: 'REGEX_MATCH',
+                            rect: rect,
+                            label: label,
+                            originalText: matchStr,
+                            sanitizedText: `[REDACTED_${name}]`,
+                            patternName: name,
+                            id: Math.random().toString(36).substr(2, 9)
+                        });
+                    }
+                } catch (e) { /* Range API can fail on detached nodes */ }
+            };
+            
+            // Evaluate Strict Patterns
             for (const pattern of this.PATTERNS) {
                 pattern.regex.lastIndex = 0;
                 let match;
                 while ((match = pattern.regex.exec(originalText)) !== null) {
-                    // Use Range API for pixel-perfect bounding box of matched text
-                    try {
-                        const range = document.createRange();
-                        range.setStart(textNode, match.index);
-                        range.setEnd(textNode, match.index + match[0].length);
-                        const rect = range.getBoundingClientRect();
-                        
-                        if (rect.width > 0 && rect.height > 0) {
-                            sensitiveElements.push({
-                                node: parent,
-                                textNode: textNode,
-                                type: 'REGEX_MATCH',
-                                rect: rect,
-                                label: pattern.label,
-                                originalText: match[0],
-                                sanitizedText: `[REDACTED_${pattern.name}]`,
-                                patternName: pattern.name,
-                                id: Math.random().toString(36).substr(2, 9)
-                            });
-                        }
-                    } catch (e) { /* Range API can fail on detached nodes */ }
+                    addRedaction(match[0], match.index, pattern.label, pattern.name);
+                }
+            }
+
+            // Evaluate Context-Aware Candidate Patterns
+            for (const candidate of this.CANDIDATE_PATTERNS) {
+                candidate.regex.lastIndex = 0;
+                let match;
+                while ((match = candidate.regex.exec(originalText)) !== null) {
+                    const textBefore = originalText.substring(Math.max(0, match.index - 45), match.index);
+                    const resolved = this.resolveCandidate(match[0], candidate.name, textBefore, nodeContext);
+                    if (resolved) {
+                        addRedaction(match[0], match.index, resolved.label, resolved.name);
+                    }
                 }
             }
         }
