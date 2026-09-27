@@ -24,10 +24,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "CALL_BACKEND") {
         const backendUrl = "http://127.0.0.1:8000/api/plan";
         
+        if (window.currentAbortController) {
+            window.currentAbortController.abort();
+        }
+        window.currentAbortController = new AbortController();
+        
         chrome.runtime.sendMessage({ type: 'LOG', text: 'Sending sanitized DOM to backend...' });
 
         fetch(backendUrl, {
             method: 'POST',
+            signal: window.currentAbortController.signal,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 task: request.task,
@@ -40,6 +46,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return res.json();
         })
         .then(data => {
+            if (!activeTask) return; // Drop zombie responses if task was finished/failed
+            
             chrome.runtime.sendMessage({ type: 'LOG', text: 'Received action plan from AI.', level: 'success' });
             actionHistory.push(`${data.action} on ${data.element_id}`);
             
@@ -52,6 +60,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         })
         .catch(error => {
+            if (error.name === 'AbortError') return; // Ignore aborted requests
+            
             chrome.runtime.sendMessage({ type: 'LOG', text: `Backend connection failed: ${error.message}`, level: 'error' });
             chrome.runtime.sendMessage({ type: 'TASK_FAILED', reason: error.message });
             activeTask = null;

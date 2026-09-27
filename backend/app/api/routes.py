@@ -11,14 +11,23 @@ class ExtensionElement(BaseModel):
     tag: str
     type: Optional[str] = None
     role: Optional[str] = None
+    name: Optional[str] = None
     text: str = ""
     value: str = ""
     placeholder: str = ""
+    ariaLabel: Optional[str] = None
+    label: Optional[str] = None
+    describedBy: Optional[str] = None
+    href: Optional[str] = None
+    checked: Optional[bool] = None
+    disabled: bool = False
 
 class ExtensionContext(BaseModel):
     url: str
     title: str
     elements: list[ExtensionElement]
+    pageTextSample: str = ""
+    elementCount: int = 0
 
 class ExtensionPlanRequest(BaseModel):
     task: str
@@ -33,10 +42,13 @@ async def health():
 async def extension_plan(req: ExtensionPlanRequest):
     elements = []
     for el in req.context.elements:
+        # Build the richest possible label by combining all semantic sources
+        resolved_label = el.ariaLabel or el.label or el.placeholder or el.text or ""
+
         elements.append(SanitizedElement(
             id=el.id,
             role=el.role or "",
-            label=el.placeholder or el.text,
+            label=resolved_label,
             type=el.type or "",
             tag=el.tag,
             text=el.text,

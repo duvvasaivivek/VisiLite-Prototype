@@ -2,41 +2,102 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisiLite Privacy Test</title>
+    <title>VisiLite PII Detection Benchmark</title>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; line-height: 1.6; }
-        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 40px auto; background: #f8f9fa; color: #333; }
+        h1 { color: #1a1a2e; }
+        h2 { color: #16213e; margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin: 12px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card p { line-height: 1.8; }
+        .metric { display: inline-block; background: #e8f4fd; padding: 4px 10px; border-radius: 4px; font-size: 13px; margin: 3px; font-family: monospace; }
+        form { display: grid; gap: 12px; max-width: 500px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        label { font-weight: 600; font-size: 14px; }
+        .status { background: #d4edda; padding: 12px; border-radius: 8px; margin-top: 20px; font-family: monospace; font-size: 13px; }
     </style>
 </head>
 <body>
-    <h1>Privacy Shield Test</h1>
-    <p>Run the VisiLite Agent on this page to test the client-side redaction.</p>
+    <h1>🛡️ VisiLite PII Detection Benchmark</h1>
+    <p>This page contains <strong>all supported PII categories</strong> for evaluation. The Privacy Shield should detect and redact every item below.</p>
 
+    <h2>📧 Contact Information</h2>
     <div class="card">
-        <h2>Your Profile</h2>
-        <!-- The Regex scanner should catch these -->
-        <p>Email Address: <span>hackathon@example.com</span></p>
-        <p>Phone Number: <span>(555) 123-4567</span></p>
-        <p>SSN: <span>123-45-6789</span></p>
+        <p>Email: <span class="metric">john.doe@example.com</span></p>
+        <p>US Phone: <span class="metric">+1 (555) 867-5309</span></p>
+        <p>Indian Phone: <span class="metric">+91 9876543210</span></p>
+        <p>Another Indian Phone: <span class="metric">7890123456</span></p>
     </div>
 
+    <h2>🆔 Indian Identity Documents</h2>
     <div class="card">
-        <h2>Update Details</h2>
-        <!-- The DOM heuristic scanner should catch these -->
-        <div class="form-group">
-            <label>Credit Card Number (autocomplete)</label>
-            <input type="text" autocomplete="cc-number" value="4111222233334444">
-        </div>
-        <div class="form-group">
-            <label>New Password (type="password")</label>
-            <input type="password" value="supersecret123">
-        </div>
-        <button id="save-btn">Save Changes</button>
+        <p>Aadhaar Card: <span class="metric">2345 6789 0123</span></p>
+        <p>PAN Card: <span class="metric">ABCPD1234E</span></p>
+        <p>Indian Passport: <span class="metric">J1234567</span></p>
+        <p>Voter ID: <span class="metric">ABC1234567</span></p>
+        <p>Driving License: <span class="metric">DL01 2023 0001234</span></p>
     </div>
+
+    <h2>🏦 Financial Information</h2>
+    <div class="card">
+        <p>Credit Card (Visa): <span class="metric">4532015112830366</span></p>
+        <p>Credit Card (MasterCard): <span class="metric">5425233430109903</span></p>
+        <p>UPI ID: <span class="metric">vivek.duvva@okicici</span></p>
+        <p>IFSC Code: <span class="metric">SBIN0001234</span></p>
+        <p>SSN: <span class="metric">123-45-6789</span></p>
+    </div>
+
+    <h2>🌐 Technical Identifiers</h2>
+    <div class="card">
+        <p>IPv4 Address: <span class="metric">192.168.1.100</span></p>
+        <p>Date of Birth: <span class="metric">15/08/1995</span></p>
+        <p>Bitcoin Address: <span class="metric">1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</span></p>
+        <p>Ethereum Address: <span class="metric">0x742d35Cc6634C0532925a3b844Bc9e7595f2bD38</span></p>
+    </div>
+
+    <h2>📝 Form Inputs (DOM Heuristic Detection)</h2>
+    <div class="card">
+        <form onsubmit="return false;">
+            <label for="full_name">Full Name</label>
+            <input type="text" id="full_name" name="full_name" value="Sai Vivek Duvva" placeholder="Enter your full name">
+
+            <label for="email_field">Email Address</label>
+            <input type="email" id="email_field" name="email" value="vivek@iiitk.ac.in">
+
+            <label for="password_field">Password</label>
+            <input type="password" id="password_field" name="password" value="supersecret123">
+
+            <label for="aadhaar_field">Aadhaar Number</label>
+            <input type="text" id="aadhaar_field" name="aadhaar" value="9876 5432 1098">
+
+            <label for="pan_field">PAN Number</label>
+            <input type="text" id="pan_field" name="pan" value="ABCPD1234E">
+
+            <label for="dob_field">Date of Birth</label>
+            <input type="text" id="dob_field" name="dob" value="15/08/1995">
+
+            <label for="account_field">Bank Account Number</label>
+            <input type="text" id="account_field" name="account" value="1234567890123456">
+
+            <label for="card_field">Card Number</label>
+            <input type="text" id="card_field" name="card" autocomplete="cc-number" value="4532015112830366">
+        </form>
+    </div>
+
+    <div class="status" id="perf-status">
+        ⏳ Run the VisiLite agent to see performance metrics here...
+    </div>
+
+    <script>
+        setInterval(() => {
+            if (window.__vlite_perf) {
+                document.getElementById('perf-status').innerHTML = 
+                    `✅ Privacy Scan: <strong>${window.__vlite_perf.lastScanMs || '—'}ms</strong> | ` +
+                    `DOM Extract: <strong>${window.__vlite_perf.lastExtractMs || '—'}ms</strong> | ` +
+                    `PII Items Found: <strong>${window.__vlite_perf.piiCount || 0}</strong> | ` +
+                    `Elements Scanned: <strong>${window.__vlite_perf.elementCount || 0}</strong> | ` +
+                    `Last Step Latency: <strong>${window.__vlite_perf.lastStepMs || '—'}ms</strong>`;
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
