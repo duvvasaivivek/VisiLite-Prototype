@@ -252,6 +252,18 @@ async function executeAction(action) {
         target.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
         return true;
     }
+    
+    if (action.action === 'ask_permission') {
+        const approved = window.confirm(`⚠️ VisiLite Action Guard ⚠️\n\n${action.reason}`);
+        if (approved) {
+            const originalAction = JSON.parse(action.value);
+            chrome.runtime.sendMessage({ type: 'LOG', text: 'Action Guard: User approved high-risk action.', level: 'success' });
+            return await executeAction(originalAction);
+        } else {
+            chrome.runtime.sendMessage({ type: 'TASK_FAILED', reason: 'Action Guard: User denied the high-risk action.' });
+            return false;
+        }
+    }
 
     return false;
 }

@@ -107,6 +107,20 @@ async def extension_plan(req: ExtensionPlanRequest):
                     raise HTTPException(400, detail=f"Requested token '{token_key}' not found in vault.")
             
             action_plan.value = value
+            
+        # 6. ACTION GUARD: Assess risk and pause if HIGH
+        from app.security.guard import guard
+        risk_level = guard.assess_risk(action_plan, sanitized_ctx)
+        
+        if risk_level == "HIGH":
+            # Wrap the action in an 'ask_permission' request
+            original_action_json = action_plan.model_dump_json()
+            el = next((e for e in sanitized_ctx.elements if e.id == action_plan.element_id), None)
+            el_text = (el.text or el.label or el.value or action_plan.element_id) if el else action_plan.element_id
+            
+            action_plan.action = "ask_permission"
+            action_plan.value = original_action_json
+            action_plan.reason = f"Agent is about to click [{el_text}]. Approve? (Y/N)"
                     
         return action_plan
     except LLMUnavailable:
