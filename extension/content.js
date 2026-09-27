@@ -254,7 +254,45 @@ async function executeAction(action) {
     }
     
     if (action.action === 'ask_permission') {
-        const approved = window.confirm(`⚠️ VisiLite Action Guard ⚠️\n\n${action.reason}`);
+        const approved = await new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+                z-index: 9999999; display: flex; justify-content: center; align-items: center;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            `;
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white; padding: 24px; border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-width: 400px;
+                text-align: center; border: 2px solid #ef4444;
+            `;
+            
+            modal.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 12px;">⚠️</div>
+                <h2 style="margin: 0 0 12px 0; color: #111; font-size: 18px;">Action Guard</h2>
+                <p style="margin: 0 0 20px 0; color: #444; font-size: 14px; line-height: 1.5;">${action.reason}</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="vlite-deny" style="padding: 8px 16px; border-radius: 6px; border: none; background: #f3f4f6; color: #374151; cursor: pointer; font-weight: 600;">Deny</button>
+                    <button id="vlite-approve" style="padding: 8px 16px; border-radius: 6px; border: none; background: #ef4444; color: white; cursor: pointer; font-weight: 600;">Approve</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            modal.querySelector('#vlite-approve').onclick = () => {
+                document.body.removeChild(overlay);
+                resolve(true);
+            };
+            modal.querySelector('#vlite-deny').onclick = () => {
+                document.body.removeChild(overlay);
+                resolve(false);
+            };
+        });
+
         if (approved) {
             const originalAction = JSON.parse(action.value);
             chrome.runtime.sendMessage({ type: 'LOG', text: 'Action Guard: User approved high-risk action.', level: 'success' });
