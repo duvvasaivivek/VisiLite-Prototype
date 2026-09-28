@@ -170,6 +170,8 @@ class GeminiPlanner(LLMClient):
             )
         metrics.add(llm_calls=1, llm_latency_ms_total=t.ms)
         if response.status_code >= 400:
+            with open("api_error.log", "w") as f:
+                f.write(f"API ERROR: {response.status_code}\nBODY: {response.text}")
             raise LLMUnavailable("AI reasoning unavailable")
         try:
             resp_json = response.json()
