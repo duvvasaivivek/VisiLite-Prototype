@@ -27,9 +27,6 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     test_sites_port: int = 3000
 
-    headless_browser: bool = False
-    playwright_slow_mo: int = 50
-
     @property
     def allowed_domain_list(self) -> list[str]:
         return [d.strip().lower() for d in self.allowed_domains.split(",") if d.strip()]
