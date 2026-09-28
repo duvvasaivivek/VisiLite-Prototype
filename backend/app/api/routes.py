@@ -34,9 +34,26 @@ class ExtensionPlanRequest(BaseModel):
     context: ExtensionContext
     history: list[str] = []
 
-@router.get("/health")
+from app.models.schemas import HealthResponse, PrivacyAnalyzeRequest
+
+@router.get("/system/health", response_model=HealthResponse)
 async def health():
-    return {"status": "ok", "agent": "idle", "browser_ready": True}
+    from app.core.config import settings
+    return HealthResponse(
+        status="ok",
+        llm_provider=settings.llm_provider,
+        llm_available=True,
+        ocr_enabled=settings.enable_ocr,
+        ocr_loaded=True,
+        browser_ready=True,
+        privacy_gateway="local"
+    )
+
+@router.post("/privacy/analyze")
+async def analyze_privacy(req: PrivacyAnalyzeRequest):
+    from app.privacy.detector import detect_hybrid
+    findings = detect_hybrid(req.text, req.html_context, req.field_name)
+    return {"findings": [{"type": f.entity_type, "match": f.match_string, "sensitivity": f.sensitivity.value} for f in findings]}
 
 @router.post("/plan")
 async def extension_plan(req: ExtensionPlanRequest):
@@ -66,17 +83,21 @@ async def extension_plan(req: ExtensionPlanRequest):
     
     history_str = "Previous actions taken in this task loop: " + ", ".join(req.history) if req.history else ""
     try:
+        import os, json, re
         from app.security.vault import vault, VaultLockedError, VaultItemNotFoundError
-        import re
 
         # For prototype purposes: auto-unlock the vault in this process
         if vault.is_locked():
-            vault.unlock("Vivek@0570")
-            print("VAULT UNLOCKED:", not vault.is_locked())
+            pwd = os.getenv("VAULT_PASSWORD")
+            if pwd:
+                try:
+                    vault.unlock(pwd)
+                    print("VAULT UNLOCKED:", not vault.is_locked())
+                except Exception as e:
+                    print("VAULT UNLOCK FAILED:", e)
 
         # Provide available tokens to the LLM context so it knows what it can ask for
         if not vault.is_locked():
-            import json, os
             vault_file = os.path.join(os.path.dirname(__file__), '..', 'security', 'vault.json')
             if os.path.exists(vault_file):
                 with open(vault_file, 'r') as f:

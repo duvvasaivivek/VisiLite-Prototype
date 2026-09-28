@@ -1,6 +1,6 @@
 import pytest
 
-from app.agent.guard import ActionGuard
+from app.security.guard import ActionGuard
 from app.agent.llm import LLMUnavailable, LocalPlanner, plan_action
 from app.models.schemas import ExtractedElement, PerceivedPage, SanitizedContext, SanitizedElement, Sensitivity
 from app.privacy.sanitizer import PrivacyGatewayError, build_sanitized_context

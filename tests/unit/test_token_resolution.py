@@ -1,4 +1,4 @@
-from app.agent.guard import ActionGuard
+from app.security.guard import ActionGuard
 from app.models.schemas import ExtractedElement, PerceivedPage, Sensitivity
 from app.privacy.vault import vault
 

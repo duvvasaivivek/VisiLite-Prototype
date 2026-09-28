@@ -5,7 +5,7 @@ from app.privacy.sanitizer import build_sanitized_context
 from app.models.schemas import ExtractedElement, PerceivedPage
 from app.security.domains import assert_allowed
 from app.security.injection import extract_untrusted_instructions, SYSTEM_POLICY
-from app.agent.guard import ActionGuard
+from app.security.guard import ActionGuard
 from app.agent.llm import LocalPlanner
 from app.privacy.profile import tokenize_profile, DEFAULT_PROFILE
 from app.audit.log import AuditLog

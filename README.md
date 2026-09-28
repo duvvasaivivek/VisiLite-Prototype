@@ -2,18 +2,18 @@
 
 Privacy-Preserving Visual Agent for Secure Web Automation.
 
-VisiLite places a **local privacy enforcement gateway** between the user's browser and the AI reasoning layer. The model receives only sanitized, task-relevant context. Sensitive values stay in a local token vault and are resolved at the Action Guard immediately before Playwright executes an action.
+VisiLite places a **local privacy enforcement gateway** between the user's browser and the AI reasoning layer. The model receives only sanitized, task-relevant context. Sensitive values stay in a local token vault and are resolved at the Action Guard immediately before the Chrome extension executes an action.
 
 This prototype does **not** claim perfect privacy, zero risk, or coverage of every website. It demonstrates a measurable boundary: for the included local workflows, raw protected profile values are not placed in the model request payload.
 
 ## Architecture
 
 ```
-USER → UI → Task Orchestrator → Playwright browser
+USER → UI → Task Orchestrator → Chrome Extension
     → Local perception (DOM + accessibility, OCR fallback)
     → Privacy gateway (PII detection, tokenization, policy, vault)
     → Sanitized context → AI reasoner (structured JSON only)
-    → Action Guard → local token resolution → browser action → observe
+    → Action Guard → local token resolution → browser action (via extension) → observe
 ```
 
 Trusted locally: browser adapter, DOM/a11y, OCR, PII detection, vault, policy, action guard, audit logs.
@@ -25,7 +25,6 @@ Untrusted: cloud LLM (if configured), external websites, webpage text (prompt-in
 - Python 3.11+
 - Node.js 20+
 - Ordinary CPU laptop (no GPU required)
-- Playwright Chromium (installed via `playwright install chromium`)
 
 Optional:
 
@@ -41,7 +40,6 @@ copy .env.example .env
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements/backend.txt
-playwright install chromium
 
 cd backend
 set PYTHONPATH=.
@@ -87,7 +85,7 @@ The agent:
 4. Sends sanitized context to the reasoner
 5. Validates JSON actions in Action Guard
 6. Resolves tokens locally (`<EMAIL_001>` → `john@example.com`)
-7. Fills and submits the form in Playwright
+7. Fills and submits the form via the Chrome extension
 8. Records real privacy/performance metrics
 
 Inspect **Model Context Inspector**. Protected raw values from the vault must not appear there.
@@ -109,13 +107,9 @@ pytest tests/unit tests/security tests/integration
 
 ## Benchmarks
 
-Start the backend (test sites + browser) first.
+Start the backend (test sites + extension) first.
 
-```bash
-set PYTHONPATH=backend
-python benchmarks/e2e_registration.py
-python benchmarks/compare_perception.py
-```
+*Note: Playwright-based benchmarking was removed as it was unused and broke the intended Chrome extension architecture.*
 
 Results are written to `benchmarks/last_e2e.json` and `benchmarks/last_run.json` from **actual runs**.
 
@@ -147,8 +141,6 @@ Only `localhost` and `127.0.0.1` by default. `javascript:`, `file:`, and unknown
 ```bash
 docker compose up --build
 ```
-
-Playwright in Docker typically needs `HEADLESS_BROWSER=true`.
 
 ## What is intentionally local
 

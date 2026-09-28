@@ -1,4 +1,4 @@
-from app.agent.guard import ActionGuard
+from app.security.guard import ActionGuard
 from app.agent.llm import plan_action
 from app.models.schemas import ExtractedElement, PerceivedPage
 from app.privacy.profile import DEFAULT_PROFILE, tokenize_profile
