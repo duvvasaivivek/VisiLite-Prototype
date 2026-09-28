@@ -24,13 +24,7 @@ class AuditLog:
             self.events.append(event)
 
     def _redact(self, value):
-        from app.privacy.vault import vault
-
         text = str(value)
-        for token, raw in vault.reverse_map().items():
-            sensitivity = vault.sensitivity_for(token)
-            if sensitivity == Sensitivity.SECRET and raw and raw in text:
-                text = text.replace(raw, token)
         lowered = text.lower()
         if any(marker.lower() in lowered for marker in SECRET_MARKERS) and not text.startswith("<"):
             if "demo-password" in lowered or "654321" in text:

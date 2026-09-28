@@ -8,3 +8,4 @@ frontend/dist/
 benchmarks/last_run.json
 benchmarks/last_e2e.json
 .playwright-browsers/
+vault.json
