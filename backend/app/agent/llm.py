@@ -131,26 +131,40 @@ class GeminiPlanner(LLMClient):
         except Exception as exc:
             raise LLMUnavailable("AI reasoning unavailable") from exc
 
+        dumped_context = context.model_dump(exclude_none=True)
+        
+        # Token Optimization: Strip empty strings and falsey values from elements
+        optimized_elements = []
+        for el in dumped_context.get("elements", []):
+            opt_el = {k: v for k, v in el.items() if v or k == "id"}
+            optimized_elements.append(opt_el)
+        dumped_context["elements"] = optimized_elements
+        
+        # Strip empty lists and dicts from the root context too
+        dumped_context = {k: v for k, v in dumped_context.items() if v or isinstance(v, bool) or k == "task"}
+
         user_content = json.dumps(
             {
                 "task": context.task,
-                "sanitized_page": context.model_dump(),
+                "sanitized_page": dumped_context,
                 "extra": extra,
                 "schema": {
+                    "thought": "step-by-step reasoning for what to do next based on the task and current page state",
                     "action": "navigate|click|fill|select|scroll|wait|extract|finish|fail|enter",
                     "element_id": "string",
                     "value": "token or public value",
                     "url": "optional",
-                    "reason": "string",
+                    "reason": "short summary of action",
                 },
-            }
+            },
+            separators=(',', ':') # Remove whitespace in JSON to save tokens
         )
 
         payload = {
             "contents": [
                 {
                     "role": "user",
-                    "parts": [{"text": f"{SYSTEM_POLICY}\n\n{user_content}"}],
+                    "parts": [{"text": f"{SYSTEM_POLICY}\n\nBefore deciding on the action, use the 'thought' field to reason step-by-step about what the user wants, what is on the screen, and how to achieve it.\n\n{user_content}"}],
                 }
             ],
             "generationConfig": {
@@ -160,19 +174,33 @@ class GeminiPlanner(LLMClient):
         }
 
         url = self.GEMINI_API_URL.format(model=settings.llm_model)
-        with timed() as t:
-            response = httpx.post(
-                url,
-                json=payload,
-                params={"key": settings.llm_api_key},
-                headers={"Content-Type": "application/json"},
-                timeout=60,
-            )
-        metrics.add(llm_calls=1, llm_latency_ms_total=t.ms)
-        if response.status_code >= 400:
-            with open("api_error.log", "w") as f:
-                f.write(f"API ERROR: {response.status_code}\nBODY: {response.text}")
-            raise LLMUnavailable("AI reasoning unavailable")
+        
+        max_retries = 3
+        import time
+        
+        for attempt in range(max_retries):
+            with timed() as t:
+                response = httpx.post(
+                    url,
+                    json=payload,
+                    params={"key": settings.llm_api_key},
+                    headers={"Content-Type": "application/json"},
+                    timeout=60,
+                )
+            metrics.add(llm_calls=1, llm_latency_ms_total=t.ms)
+            
+            if response.status_code in (429, 503) and attempt < max_retries - 1:
+                # Wait 2 seconds before retrying on rate limit or high demand
+                time.sleep(2 * (attempt + 1))
+                continue
+                
+            if response.status_code >= 400:
+                with open("api_error.log", "w") as f:
+                    f.write(f"API ERROR: {response.status_code}\nBODY: {response.text}")
+                raise LLMUnavailable("AI reasoning unavailable")
+            
+            break # Success, exit retry loop
+            
         try:
             resp_json = response.json()
             content = resp_json["candidates"][0]["content"]["parts"][0]["text"]
