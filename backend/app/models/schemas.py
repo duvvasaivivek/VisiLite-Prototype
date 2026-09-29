@@ -84,6 +84,7 @@ class SanitizedContext(BaseModel):
 
 
 class StructuredAction(BaseModel):
+    thought: Optional[str] = None
     action: AgentActionType
     element_id: Optional[str] = None
     value: Optional[str] = None

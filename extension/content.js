@@ -62,7 +62,7 @@ function extractDOM() {
         }
 
         // 1d. Extract rich semantic attributes for AI grounding
-        const ariaLabel = node.getAttribute('aria-label') || '';
+        let ariaLabel = node.getAttribute('aria-label') || '';
         const ariaDescribedBy = node.getAttribute('aria-describedby');
         let describedByText = '';
         if (ariaDescribedBy) {
@@ -70,7 +70,13 @@ function extractDOM() {
             if (descEl) describedByText = (descEl.textContent || '').trim().substring(0, 80);
         }
 
-        const resolvedLabel = labelMap[node.id] || '';
+        let resolvedLabel = labelMap[node.id] || '';
+
+        if (window.PrivacyScanner) {
+            ariaLabel = window.PrivacyScanner.scanNodeText(ariaLabel);
+            describedByText = window.PrivacyScanner.scanNodeText(describedByText);
+            resolvedLabel = window.PrivacyScanner.scanNodeText(resolvedLabel);
+        }
 
         elements.push({
             id: elId,
@@ -99,8 +105,10 @@ function extractDOM() {
     // 1e. Page text sample for contextual awareness
     const bodyText = (document.body.textContent || '').trim();
     let pageTextSample = bodyText.substring(0, 500);
+    let pageTitle = document.title;
     if (window.PrivacyScanner) {
         pageTextSample = window.PrivacyScanner.scanNodeText(pageTextSample);
+        pageTitle = window.PrivacyScanner.scanNodeText(pageTitle);
     }
 
     const perfEnd = performance.now();
@@ -115,7 +123,7 @@ function extractDOM() {
 
     return {
         url: window.location.href,
-        title: document.title,
+        title: pageTitle,
         elements: elements,
         pageTextSample: pageTextSample,
         elementCount: elements.length

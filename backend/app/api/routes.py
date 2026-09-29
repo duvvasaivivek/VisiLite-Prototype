@@ -57,24 +57,31 @@ async def analyze_privacy(req: PrivacyAnalyzeRequest):
 
 @router.post("/plan")
 async def extension_plan(req: ExtensionPlanRequest):
+    from app.privacy.sanitizer import redact_text
+    
     elements = []
     for el in req.context.elements:
         # Build the richest possible label by combining all semantic sources
         resolved_label = el.ariaLabel or el.label or el.placeholder or el.text or ""
 
+        # Enforce backend-side privacy redaction as a fallback
+        safe_label = redact_text(resolved_label, resolved_label, el.type or "")
+        safe_text = redact_text(el.text, resolved_label, el.type or "")
+        safe_value = redact_text(el.value, resolved_label, el.type or "")
+
         elements.append(SanitizedElement(
             id=el.id,
             role=el.role or "",
-            label=resolved_label,
+            label=safe_label,
             type=el.type or "",
             tag=el.tag,
-            text=el.text,
-            value=el.value,
+            text=safe_text,
+            value=safe_value,
             sensitivity=Sensitivity.PUBLIC
         ))
     
     sanitized_ctx = SanitizedContext(
-        page_title=req.context.title,
+        page_title=redact_text(req.context.title),
         url=req.context.url,
         task=req.task,
         elements=elements,
